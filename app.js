@@ -9,7 +9,7 @@ canvas.height = canvasHeight;
 
 let animate;
 
-let newPlayer = new Player(canvasWidth/2 -25, canvasHeight/2 -25, 50, 50);
+let newPlayer = new Player(canvasWidth/2 -25, canvasHeight/2 -25, 60, 60, null, './Assets/original.png');
 
 let enemySpawnCoolDown = 120;
 let allEnemies = [];
@@ -17,24 +17,32 @@ let allEnemies = [];
 function animator(){
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
     animate = requestAnimationFrame(animator);
+    
+    if(newPlayer){
+        newPlayer.draw(ctx);
+        newPlayer.controls(canvasWidth, canvasHeight);
+    };
+
     enemySpawnCoolDown--;
     if(enemySpawnCoolDown <= 0){
         enemySpawn();
-        enemySpawnCoolDown = 120;
-    }
-    newPlayer.draw(ctx);
-    newPlayer.controls(canvasWidth, canvasHeight);
+        enemySpawnCoolDown = 80;
+    };
+
     allEnemies.forEach(enemy => {
         enemy.draw(ctx);
         enemy.move();
     });
-    checkCollision();
-    allEnemies = allEnemies.filter(enemy => enemy.healthPoints > 0);
+
+    if(newPlayer){
+        checkCollision();
+    };
+    
 };
 
 function enemySpawn(){
     const randomX = Math.random()*(canvasWidth-50);
-    let enemy = new BaseEnemy(randomX, -60, 50, 50);
+    let enemy = new BaseEnemy(randomX, -60, 50, 50, null, './Assets/ufo.avif');
     allEnemies.push(enemy);
 };
 
@@ -43,19 +51,18 @@ function checkCollision(){
     let playerAssets = [newPlayer, ...newPlayer.projectiles];
     for (let i = 0; i < playerAssets.length; i++) {
         const pA = playerAssets[i];
-
         for (let j = 0; j < allEnemies.length; j++) {
             const enemy = allEnemies[j];
-
-            if(enemy.x < (pA.x + pA.width) && 
-            (enemy.x + enemy.width) > pA.x && 
-            enemy.y < (pA.y + pA.height) && 
-            (enemy.y + enemy.height) > pA.y){
-                enemy.healthPoints--;
-                console.log("enemy", enemy)
-            };  
+            if(pA.isColliding(enemy)){
+                pA.collision();
+                enemy.collision();
+            };
         };
-
+    };
+    allEnemies = allEnemies.filter(enemy => enemy.isAlive);
+    newPlayer.projectiles = newPlayer.projectiles.filter(projectiles => projectiles.isAlive);
+    if(!newPlayer.isAlive){
+        newPlayer = null;
     };
 };
 
